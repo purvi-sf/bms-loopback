@@ -1,0 +1,12 @@
+{
+  "ids": {
+    "Author": 2,
+    "Book": 2
+  },
+  "models": {
+    "Author": {
+      "1": "{\"firstName\":\"J.K.\",\"lastName\":\"Rowling\",\"email\":\"jk@rowling.com\",\"bio\":\"British author\",\"id\":1}"
+    },
+    "Book": {}
+  }
+}
