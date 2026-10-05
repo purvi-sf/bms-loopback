@@ -7,8 +7,14 @@ import {
   RestExplorerComponent,
 } from '@loopback/rest-explorer';
 import {ServiceMixin} from '@loopback/service-proxy';
+import {AuthenticationComponent, Strategies} from 'loopback4-authentication';
+import {
+  AuthorizationBindings,
+  AuthorizationComponent,
+} from 'loopback4-authorization';
 import path from 'path';
 import {BmsComponent} from './components/bms.component';
+import {BearerTokenVerifyProvider} from './providers/bearer-token-verify.provider';
 import {MySequence} from './sequence';
 
 export {ApplicationConfig};
@@ -28,12 +34,33 @@ export class BmsLoopbackApplication extends BootMixin(
     });
     this.component(RestExplorerComponent);
 
-    // Register our custom BMS Component
+    // custom BMS Component
     this.component(BmsComponent);
+
+    this.component(AuthenticationComponent);
+
+    // This is what actually validates JWT tokens on @authenticate('bearer') routes
+    this.bind(Strategies.Passport.BEARER_TOKEN_VERIFIER).toProvider(
+      BearerTokenVerifyProvider,
+    );
+
+    // ARC Authorization RBAC
+    this.bind(AuthorizationBindings.CONFIG).to({
+      allowAlwaysPaths: [
+        '/explorer',
+        '/openapi.json',
+        '/ping',
+        '/auth/login',
+        '/auth/google',
+        '/auth/google-auth-redirect',
+        '/auth/rbac-info',
+        '/auth/security-info',
+      ],
+    });
+    this.component(AuthorizationComponent);
 
     this.projectRoot = __dirname;
 
-    // This is the critical part -- must use .js extension
     this.bootOptions = {
       controllers: {
         dirs: ['controllers'],
