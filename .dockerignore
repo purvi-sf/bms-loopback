@@ -1,5 +1,15 @@
 node_modules
-npm-debug.log
-/dist
-# Cache used by TypeScript's incremental build
+dist
+coverage
+mochawesome-report
+.env
+*.log
+.git
+.gitignore
+.husky
+.eslintrc.js
+.prettierrc
+.nycrc
+.mocharc.json
+README.md
 *.tsbuildinfo

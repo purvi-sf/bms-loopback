@@ -1,26 +1,34 @@
 import {inject} from '@loopback/core';
 import {
+  ControllerRoute,
   FindRoute,
   HttpErrors,
   InvokeMethod,
   ParseParams,
   Reject,
+  RedirectRoute,
   RequestContext,
+  ResolvedRoute,
   RestBindings,
+  Route,
   Send,
   SequenceHandler,
 } from '@loopback/rest';
-import {
-  AuthenticateFn,
-  AuthenticationBindings,
-} from 'loopback4-authentication';
-import {
-  AuthorizationBindings,
-  AuthorizeFn,
-} from 'loopback4-authorization';
+import {AuthenticateFn, AuthenticationBindings} from 'loopback4-authentication';
+import {AuthorizationBindings, AuthorizeFn} from 'loopback4-authorization';
 import {AuthUser} from './providers/bearer-token-verify.provider';
 
 const SequenceActions = RestBindings.SequenceActions;
+
+// Static files from public/ (e.g. GET /) resolve to an external Express route
+// with no controller method; loopback4-authorization answers those with 404
+function isLoopbackRoute(route: ResolvedRoute): boolean {
+  return (
+    route instanceof ControllerRoute ||
+    route instanceof Route ||
+    route instanceof RedirectRoute
+  );
+}
 
 export class MySequence implements SequenceHandler {
   constructor(
@@ -33,7 +41,7 @@ export class MySequence implements SequenceHandler {
     protected authenticateRequest: AuthenticateFn<AuthUser>,
     @inject(AuthorizationBindings.AUTHORIZE_ACTION)
     protected checkAuthorisation: AuthorizeFn,
-  ) { }
+  ) {}
 
   async handle(context: RequestContext) {
     try {
@@ -49,10 +57,9 @@ export class MySequence implements SequenceHandler {
       const args = await this.parseParams(request, route);
 
       // Runs @authorize decorator check using the user's permissions
-      const isAllowed = await this.checkAuthorisation(
-        authUser?.permissions ?? [],
-        request,
-      );
+      const isAllowed =
+        !isLoopbackRoute(route) ||
+        (await this.checkAuthorisation(authUser?.permissions ?? [], request));
 
       if (!isAllowed) {
         // OWASP A01: proper 403 Forbidden for authorization failures

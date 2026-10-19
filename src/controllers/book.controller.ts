@@ -31,14 +31,13 @@ export class BookController {
   constructor(
     @repository(BookRepository)
     public bookRepository: BookRepository,
-  ) { }
+  ) {}
 
   @post('/books')
   @response(200, {
     description: 'Book model instance',
     content: {'application/json': {schema: getModelSchemaRef(Book)}},
   })
-
   @logMethod({level: 'info'})
   async create(
     @requestBody({
@@ -61,9 +60,7 @@ export class BookController {
     description: 'Book model count',
     content: {'application/json': {schema: CountSchema}},
   })
-  async count(
-    @param.where(Book) where?: Where<Book>,
-  ): Promise<Count> {
+  async count(@param.where(Book) where?: Where<Book>): Promise<Count> {
     return this.bookRepository.count(where);
   }
 
@@ -79,9 +76,7 @@ export class BookController {
       },
     },
   })
-  async find(
-    @param.filter(Book) filter?: Filter<Book>,
-  ): Promise<Book[]> {
+  async find(@param.filter(Book) filter?: Filter<Book>): Promise<Book[]> {
     return this.bookRepository.find(filter);
   }
 
@@ -115,7 +110,7 @@ export class BookController {
   })
   async findById(
     @param.path.number('id') id: number,
-    @param.filter(Book, {exclude: 'where'}) filter?: FilterExcludingWhere<Book>
+    @param.filter(Book, {exclude: 'where'}) filter?: FilterExcludingWhere<Book>,
   ): Promise<Book> {
     return this.bookRepository.findById(id, filter);
   }

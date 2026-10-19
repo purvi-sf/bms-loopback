@@ -8,6 +8,8 @@ import {
   post,
   requestBody,
   response,
+  Response,
+  RestBindings,
 } from '@loopback/rest';
 import {authenticate} from 'loopback4-authentication';
 import {authorize} from 'loopback4-authorization';
@@ -29,7 +31,7 @@ export class SecureBookController {
     public authorRepository: AuthorRepository,
     @inject('providers.BookValidator')
     private bookValidator: BookValidator,
-  ) { }
+  ) {}
 
   // GET /secure/books
   // @authenticate: verifies JWT token -- 401 if missing or invalid
@@ -46,7 +48,9 @@ export class SecureBookController {
   @authenticate('bearer')
   @authorize({permissions: [Permissions.CREATE_BOOK]})
   @post('/secure/books')
-  @response(201, {description: 'Create book -- requires CREATE_BOOK permission'})
+  @response(201, {
+    description: 'Create book -- requires CREATE_BOOK permission',
+  })
   async create(
     @requestBody({
       content: {
@@ -68,6 +72,7 @@ export class SecureBookController {
       },
     })
     book: Omit<Book, 'id'>,
+    @inject(RestBindings.Http.RESPONSE) res: Response,
   ): Promise<Book> {
     // BookValidator throws a plain Error; return it as 422 instead of a 500
     try {
@@ -81,17 +86,19 @@ export class SecureBookController {
       throw new HttpErrors.UnprocessableEntity('Author not found');
     }
 
-    return this.bookRepository.create(book);
+    const created = await this.bookRepository.create(book);
+    res.status(201);
+    return created;
   }
 
   // DELETE /secure/books/:id - Only admin role has DELETE_BOOK permission
   @authenticate('bearer')
   @authorize({permissions: [Permissions.DELETE_BOOK]})
   @del('/secure/books/{id}')
-  @response(204, {description: 'Delete book -- requires DELETE_BOOK permission (admin only)'})
-  async deleteById(
-    @param.path.number('id') id: number,
-  ): Promise<void> {
+  @response(204, {
+    description: 'Delete book -- requires DELETE_BOOK permission (admin only)',
+  })
+  async deleteById(@param.path.number('id') id: number): Promise<void> {
     await this.bookRepository.deleteById(id);
   }
 }

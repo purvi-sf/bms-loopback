@@ -6,13 +6,20 @@ import {authorize} from 'loopback4-authorization';
 
 // JWT secret in production comes from process.env.JWT_SECRET
 // which is stored in GitHub Secrets, never hardcoded
-const jwtSecretFromEnv = process.env.JWT_SECRET;
-if (!jwtSecretFromEnv) {
-  throw new Error(
-    'JWT_SECRET environment variable is required. Set it in .env or GitHub Secrets.',
-  );
+const MISSING_SECRET_MESSAGE =
+  'JWT_SECRET environment variable is required. Set it in .env or GitHub Secrets.';
+if (!process.env.JWT_SECRET) {
+  throw new Error(MISSING_SECRET_MESSAGE);
 }
-const JWT_SECRET: string = jwtSecretFromEnv;
+
+// Read on every sign/verify so a rotated or test-specific secret is picked up
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error(MISSING_SECRET_MESSAGE);
+  }
+  return secret;
+}
 const JWT_EXPIRY = '1h';
 
 // Role     | Permissions
@@ -58,7 +65,7 @@ const MOCK_USERS = [
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 12);
 
 export class AuthController {
-  constructor() { }
+  constructor() {}
 
   // POST /auth/login -- local authentication
   // OAuth 2.0 Step 1: user provides credentials
@@ -82,7 +89,10 @@ export class AuthController {
         },
       },
     })
-    credentials: {email: string; password: string},
+    credentials: {
+      email: string;
+      password: string;
+    },
   ): Promise<object> {
     // Find user by email
     const user = MOCK_USERS.find(u => u.email === credentials.email);
@@ -117,7 +127,7 @@ export class AuthController {
         role: user.role,
         permissions: ROLE_PERMISSIONS[user.role],
       },
-      JWT_SECRET,
+      getJwtSecret(),
       {
         expiresIn: JWT_EXPIRY,
         // OWASP A07: tokens expire after 1 hour
@@ -178,8 +188,7 @@ export class AuthController {
       message: 'Google OAuth2 Callback',
       description:
         'Google redirects here after authentication with an authorization code',
-      nextStep:
-        'Exchange the code for an access token and issue a signed JWT',
+      nextStep: 'Exchange the code for an access token and issue a signed JWT',
     };
   }
 

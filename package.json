@@ -25,6 +25,7 @@
     "test": "lb-mocha --allow-console-logs \"dist/__tests__\"",
     "posttest": "npm run lint",
     "test:dev": "lb-mocha --allow-console-logs dist/__tests__/**/*.js && npm run posttest",
+    "test:coverage": "npx lb-nyc lb-mocha --allow-console-logs \"dist/__tests__\"",
     "docker:build": "docker build -t bms-loopback .",
     "docker:run": "docker run -p 3000:3000 -d bms-loopback",
     "premigrate": "npm run build",
@@ -71,8 +72,11 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.43",
     "@types/passport-google-oauth20": "^2.0.17",
+    "@types/sinon": "^22.0.0",
     "eslint": "^8.57.1",
     "husky": "^9.1.7",
+    "mochawesome": "^8.1.1",
+    "sinon": "^22.1.0",
     "source-map-support": "^0.5.21",
     "typescript": "~5.2.2"
   }

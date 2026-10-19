@@ -14,10 +14,10 @@ export class BookValidatorProvider implements Provider<BookValidator> {
   constructor(
     @inject('datasources.db')
     private dataSource: DbDataSource,
-  ) { }
+  ) {}
 
   value(): BookValidator {
-    return (book) => {
+    return book => {
       if (!book.isbn || book.isbn.length < 10) {
         throw new Error('ISBN must be at least 10 characters');
       }

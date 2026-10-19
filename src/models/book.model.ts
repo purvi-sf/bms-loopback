@@ -54,7 +54,6 @@ export class Book extends Entity {
   })
   authorId: number;
 
-
   constructor(data?: Partial<Book>) {
     super(data);
   }
