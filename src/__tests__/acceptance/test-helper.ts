@@ -18,6 +18,9 @@ export async function setupApplication(): Promise<AppWithClient> {
     rest: restConfig,
   });
 
+  // Use a fresh in-memory datasource so tests never read or write data/db.json
+  app.bind('datasources.config.db').to({name: 'db', connector: 'memory'});
+
   await app.boot();
   await app.start();
 

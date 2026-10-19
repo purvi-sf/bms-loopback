@@ -23,7 +23,7 @@ import {AuthorRepository} from '../repositories';
 export class AuthorController {
   constructor(
     @repository(AuthorRepository)
-    public authorRepository : AuthorRepository,
+    public authorRepository: AuthorRepository,
   ) {}
 
   @post('/authors')
@@ -52,9 +52,7 @@ export class AuthorController {
     description: 'Author model count',
     content: {'application/json': {schema: CountSchema}},
   })
-  async count(
-    @param.where(Author) where?: Where<Author>,
-  ): Promise<Count> {
+  async count(@param.where(Author) where?: Where<Author>): Promise<Count> {
     return this.authorRepository.count(where);
   }
 
@@ -70,9 +68,7 @@ export class AuthorController {
       },
     },
   })
-  async find(
-    @param.filter(Author) filter?: Filter<Author>,
-  ): Promise<Author[]> {
+  async find(@param.filter(Author) filter?: Filter<Author>): Promise<Author[]> {
     return this.authorRepository.find(filter);
   }
 
@@ -106,7 +102,8 @@ export class AuthorController {
   })
   async findById(
     @param.path.number('id') id: number,
-    @param.filter(Author, {exclude: 'where'}) filter?: FilterExcludingWhere<Author>
+    @param.filter(Author, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Author>,
   ): Promise<Author> {
     return this.authorRepository.findById(id, filter);
   }

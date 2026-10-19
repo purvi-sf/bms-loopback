@@ -1,0 +1,13 @@
+# Section for git-secrets
+if ! command -v git-secrets &> /dev/null
+then
+  echo "git-secrets is not installed. Please run 'brew install git-secrets'"
+  exit 1
+fi
+
+# Run git-secrets --register-aws once during repo setup, not on every commit
+
+echo "Running git-secrets..."
+
+# Scans all files that are about to be committed
+git-secrets --pre_commit_hook -- "$@"

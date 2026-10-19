@@ -23,7 +23,9 @@ export class LogInterceptor implements Provider<Interceptor> {
       const result = await next();
 
       const duration = Date.now() - startTime;
-      console.log(`[LOG] <-- ${invocationCtx.targetName} completed in ${duration}ms`);
+      console.log(
+        `[LOG] <-- ${invocationCtx.targetName} completed in ${duration}ms`,
+      );
 
       return result;
     };
