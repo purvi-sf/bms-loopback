@@ -3,6 +3,7 @@ import {DefaultCrudRepository} from '@loopback/repository';
 import {DbDataSource} from '../datasources';
 import {Book, BookRelations} from '../models';
 
+// Repository pattern: centralises data access — see src/patterns/architecture/repository.ts
 export class BookRepository extends DefaultCrudRepository<
   Book,
   typeof Book.prototype.id,

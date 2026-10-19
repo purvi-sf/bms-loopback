@@ -24,6 +24,7 @@ import {
 
 import {logMethod} from '../decorators/log-method.decorator';
 import {Book} from '../models';
+import {BookFactory} from '../patterns/creational/factory';
 import {BookRepository} from '../repositories';
 
 @intercept(LogInterceptor.BINDING_KEY)
@@ -53,6 +54,8 @@ export class BookController {
     })
     book: Omit<Book, 'id'>,
   ): Promise<Book> {
+    const factory = BookFactory.getInstance();
+    factory.logCreation(book.bookType ?? 'unknown');
     return this.bookRepository.create(book);
   }
 
