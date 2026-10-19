@@ -5,8 +5,7 @@ then
   exit 1
 fi
 
-# Initialise git-secrets configuration
-git-secrets --register-aws > /dev/null
+# Run git-secrets --register-aws once during repo setup, not on every commit
 
 echo "Running git-secrets..."
 

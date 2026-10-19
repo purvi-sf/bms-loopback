@@ -15,6 +15,7 @@ import {
 import path from 'path';
 import {BmsComponent} from './components/bms.component';
 import {BearerTokenVerifyProvider} from './providers/bearer-token-verify.provider';
+import {GoogleOauth2VerifyProvider} from './providers/google-oauth.provider';
 import {MySequence} from './sequence';
 
 export {ApplicationConfig};
@@ -38,6 +39,9 @@ export class BmsLoopbackApplication extends BootMixin(
     this.component(BmsComponent);
 
     this.component(AuthenticationComponent);
+    this.bind(Strategies.Passport.GOOGLE_OAUTH2_VERIFIER).toProvider(
+      GoogleOauth2VerifyProvider,
+    );
 
     // This is what actually validates JWT tokens on @authenticate('bearer') routes
     this.bind(Strategies.Passport.BEARER_TOKEN_VERIFIER).toProvider(
@@ -45,16 +49,19 @@ export class BmsLoopbackApplication extends BootMixin(
     );
 
     // ARC Authorization RBAC
+    // allowAlwaysPaths are prefix matches: '/books' also covers '/books/{id}'
+    // and '/books/count'. '/auth/security-info' is not listed: it needs a JWT.
     this.bind(AuthorizationBindings.CONFIG).to({
       allowAlwaysPaths: [
+        '/books',
+        '/authors',
+        '/ping',
         '/explorer',
         '/openapi.json',
-        '/ping',
         '/auth/login',
         '/auth/google',
         '/auth/google-auth-redirect',
         '/auth/rbac-info',
-        '/auth/security-info',
       ],
     });
     this.component(AuthorizationComponent);

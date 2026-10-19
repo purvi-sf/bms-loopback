@@ -1,9 +1,19 @@
+import {inject} from '@loopback/core';
 import {repository} from '@loopback/repository';
-import {del, get, param, post, requestBody, response} from '@loopback/rest';
+import {
+  del,
+  get,
+  HttpErrors,
+  param,
+  post,
+  requestBody,
+  response,
+} from '@loopback/rest';
 import {authenticate} from 'loopback4-authentication';
 import {authorize} from 'loopback4-authorization';
 import {Book} from '../models';
-import {BookRepository} from '../repositories';
+import {BookValidator} from '../providers/book-validator.provider';
+import {AuthorRepository, BookRepository} from '../repositories';
 
 export const Permissions = {
   READ_BOOKS: 'READ_BOOKS',
@@ -15,6 +25,10 @@ export class SecureBookController {
   constructor(
     @repository(BookRepository)
     public bookRepository: BookRepository,
+    @repository(AuthorRepository)
+    public authorRepository: AuthorRepository,
+    @inject('providers.BookValidator')
+    private bookValidator: BookValidator,
   ) { }
 
   // GET /secure/books
@@ -55,6 +69,18 @@ export class SecureBookController {
     })
     book: Omit<Book, 'id'>,
   ): Promise<Book> {
+    // BookValidator throws a plain Error; return it as 422 instead of a 500
+    try {
+      this.bookValidator(book);
+    } catch (err) {
+      throw new HttpErrors.UnprocessableEntity((err as Error).message);
+    }
+
+    const authorExists = await this.authorRepository.exists(book.authorId);
+    if (!authorExists) {
+      throw new HttpErrors.UnprocessableEntity('Author not found');
+    }
+
     return this.bookRepository.create(book);
   }
 

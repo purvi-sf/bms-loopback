@@ -1,10 +1,18 @@
 import {get, HttpErrors, post, requestBody, response} from '@loopback/rest';
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
+import {authenticate} from 'loopback4-authentication';
+import {authorize} from 'loopback4-authorization';
 
 // JWT secret in production comes from process.env.JWT_SECRET
 // which is stored in GitHub Secrets, never hardcoded
-const JWT_SECRET = process.env.JWT_SECRET ?? 'bms-loopback-jwt-secret-key';
+const jwtSecretFromEnv = process.env.JWT_SECRET;
+if (!jwtSecretFromEnv) {
+  throw new Error(
+    'JWT_SECRET environment variable is required. Set it in .env or GitHub Secrets.',
+  );
+}
+const JWT_SECRET: string = jwtSecretFromEnv;
 const JWT_EXPIRY = '1h';
 
 // Role     | Permissions
@@ -45,6 +53,10 @@ const MOCK_USERS = [
   },
 ];
 
+// Real bcrypt hash compared against when the email is unknown, so failed
+// logins take the same time whether or not the account exists
+const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', 12);
+
 export class AuthController {
   constructor() { }
 
@@ -80,7 +92,7 @@ export class AuthController {
     // This prevents user enumeration attacks
     if (!user) {
       // Still run bcrypt to prevent timing attacks that reveal valid emails
-      await bcrypt.compare(credentials.password, '$2a$12$invalidhashtopreventtiming');
+      await bcrypt.compare(credentials.password, DUMMY_HASH);
       throw new HttpErrors.Unauthorized('Invalid credentials');
     }
 
@@ -197,42 +209,46 @@ export class AuthController {
   }
 
   // GET /auth/security-info OWASP implementation summary
+  // Requires a valid JWT; '*' lets any authenticated role read it
+  @authenticate('bearer')
+  @authorize({permissions: ['*']})
   @get('/auth/security-info')
   @response(200, {description: 'OWASP security measures implemented'})
   async securityInfo(): Promise<object> {
     return {
       owasp_top_10_mitigations: {
         A01_Broken_Access_Control:
-          'RBAC via loopback4-authorization @authorize decorator',
+          'RBAC via loopback4-authorization @authorize; /secure/books routes require a JWT and the matching permission',
         A02_Cryptographic_Failures:
-          'JWT signed with HS256 via jsonwebtoken, bcrypt (rounds=12) for passwords, HTTPS in production',
+          'JWT signed with HS256 via jsonwebtoken, bcrypt (rounds=12) for passwords, secret read from JWT_SECRET only',
         A03_Injection:
-          'Sequelize ORM with parameterized queries (Assignment 12)',
+          'Request bodies validated against OpenAPI schemas; POST /secure/books also runs BookValidator and checks the author exists',
         A04_Insecure_Design:
-          'Security NFRs defined, threat modeling, least privilege RBAC',
+          'Least-privilege roles: viewer (read), editor (read/create), admin (read/create/delete)',
         A05_Security_Misconfiguration:
-          'Environment variables via .env, secrets via GitHub Secrets, never hardcoded',
+          'No hardcoded secrets -- the app refuses to start without JWT_SECRET; CI reads secrets from GitHub Secrets',
         A06_Vulnerable_Components:
-          'npm audit in CI pipeline, regular dependency updates',
+          'npm audit --audit-level=high runs in .github/workflows/security.yml (report only, does not fail the build)',
         A07_Authentication_Failures:
-          'bcrypt password hashing, JWT expiry (1h), no user enumeration, constant-time comparison',
+          'bcrypt password hashing, JWT expiry (1h), generic "Invalid credentials" message, dummy bcrypt compare for unknown emails',
         A08_Software_Integrity:
-          'Husky pre-commit hooks + git-secrets prevent committing credentials',
+          'Husky pre-commit hook runs git-secrets to block committing credentials',
         A09_Logging_Failures:
-          'Winston structured logging with request tracking (Assignment 14)',
-        A10_SSRF:
-          'Input validation, whitelist allowed URLs, no user-controlled redirects',
+          'LogInterceptor logs BookController calls, arguments and duration to the console',
       },
       authentication: {
-        strategy: 'OAuth 2.0 via Passport.js + loopback4-authentication',
+        strategy: 'Bearer JWT via loopback4-authentication',
         token_type: 'JWT (JSON Web Token)',
         token_algorithm: 'HS256',
         token_expiry: '1 hour',
         password_hashing: 'bcrypt with 12 rounds',
-        supported_providers: ['Local (email/password)', 'Google OAuth2'],
+        supported_providers: [
+          'Local (email/password)',
+          'Google OAuth2 (verifier bound; /auth/google routes are placeholders)',
+        ],
         arc_packages: [
           'loopback4-authentication',
-          '@sourceloop/authentication-service',
+          'loopback4-authorization',
           'passport-google-oauth20',
         ],
       },
@@ -245,7 +261,8 @@ export class AuthController {
       git_security: {
         tool: 'git-secrets + Husky pre-commit hooks',
         prevents: 'Committing AWS keys, passwords, API tokens to git',
-        setup: 'brew install git-secrets && npx husky init',
+        setup:
+          'brew install git-secrets && git secrets --register-aws (once per clone)',
         hook: '.husky/pre-commit runs git-secrets --pre_commit_hook',
       },
       github_secrets: {
@@ -253,10 +270,9 @@ export class AuthController {
           'JWT_SECRET',
           'GOOGLE_AUTH_CLIENT_ID',
           'GOOGLE_AUTH_CLIENT_SECRET',
-          'DB_PASSWORD',
         ],
         how: 'Settings → Secrets and variables → Actions → New repository secret',
-        in_workflow: '${{ secrets.JWT_SECRET }}',
+        in_workflow: '.github/workflows/security.yml',
         never_in_code: true,
       },
     };

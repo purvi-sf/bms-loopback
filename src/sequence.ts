@@ -39,11 +39,14 @@ export class MySequence implements SequenceHandler {
     try {
       const {request, response} = context;
       const route = this.findRoute(request);
-      const args = await this.parseParams(request, route);
 
+      // Authenticate before parsing the body, so unauthenticated requests are
+      // rejected with 401 without their payload being parsed or validated.
       // Runs BearerTokenVerifyProvider for @authenticate('bearer') routes
       // Returns null for public routes (not decorated with @authenticate)
       const authUser = await this.authenticateRequest(request, response);
+
+      const args = await this.parseParams(request, route);
 
       // Runs @authorize decorator check using the user's permissions
       const isAllowed = await this.checkAuthorisation(

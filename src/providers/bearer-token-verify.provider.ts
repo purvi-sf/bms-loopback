@@ -3,7 +3,13 @@ import {HttpErrors} from '@loopback/rest';
 import * as jwt from 'jsonwebtoken';
 import {VerifyFunction} from 'loopback4-authentication';
 
-const JWT_SECRET = process.env.JWT_SECRET ?? 'bms-loopback-jwt-secret-key';
+const jwtSecretFromEnv = process.env.JWT_SECRET;
+if (!jwtSecretFromEnv) {
+  throw new Error(
+    'JWT_SECRET environment variable is required. Set it in .env or GitHub Secrets.',
+  );
+}
+const JWT_SECRET: string = jwtSecretFromEnv;
 
 export interface AuthUser {
   id: string;
