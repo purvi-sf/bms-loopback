@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto';
 import {DemoLogger} from '../shared/bms-types';
 
 export interface DatabaseConfig {
@@ -11,6 +12,7 @@ export interface ConnectionStatus {
   connectionCount: number;
   config: DatabaseConfig;
   connectedAt?: string;
+  instanceId: string;
   instanceCreatedAt: string;
 }
 
@@ -28,6 +30,7 @@ export class DatabaseConnectionSingleton {
   private connections = 0;
   private connectedAt?: Date;
   private readonly createdAt = new Date();
+  private readonly instanceId = randomUUID();
 
   private constructor(private readonly config: DatabaseConfig) {}
 
@@ -73,6 +76,7 @@ export class DatabaseConnectionSingleton {
       connectionCount: this.connections,
       config: {...this.config},
       connectedAt: this.connectedAt?.toISOString(),
+      instanceId: this.instanceId,
       instanceCreatedAt: this.createdAt.toISOString(),
     };
   }

@@ -144,6 +144,22 @@ type BookCreators = {
 
 // Factory -- creates printed, e-book and audio books without exposing construction logic
 export class BookFactory {
+  private static instance: BookFactory | undefined;
+
+  static getInstance(): BookFactory {
+    BookFactory.instance ??= new BookFactory();
+    return BookFactory.instance;
+  }
+
+  logCreation(bookType: string): void {
+    const supported = this.getSupportedTypes().includes(
+      bookType.toLowerCase() as BookType,
+    );
+    console.log(
+      `[BookFactory] Creating book of type "${bookType}"${supported ? '' : ' (not a factory type)'}`,
+    );
+  }
+
   private readonly creators: BookCreators = {
     printed: data => new PrintedBook(data),
     ebook: data => new EBook(data),

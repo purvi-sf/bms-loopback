@@ -1,18 +1,21 @@
 import {DemoLogger} from '../shared/bms-types';
 
-export const BOOK_EVENTS = [
-  'book:created',
-  'book:updated',
-  'book:deleted',
-  'book:viewed',
-] as const;
+export const BOOK_EVENTS = {
+  BOOK_CREATED: 'book:created',
+  BOOK_UPDATED: 'book:updated',
+  BOOK_DELETED: 'book:deleted',
+  BOOK_VIEWED: 'book:viewed',
+} as const;
 
-export type BookEventType = (typeof BOOK_EVENTS)[number];
+export type BookEventType = (typeof BOOK_EVENTS)[keyof typeof BOOK_EVENTS];
+
+const ALL_BOOK_EVENTS: readonly BookEventType[] = Object.values(BOOK_EVENTS);
 
 export interface BookEventData {
   bookId: number;
   title?: string;
   actor?: string;
+  method?: string;
   changes?: Record<string, unknown>;
 }
 
@@ -29,19 +32,19 @@ export interface NotifyResult {
 // Observer -- notifies services when books change without tight coupling
 export class BookEventSystem {
   private readonly observers = new Map<BookEventType, Set<IObserver>>(
-    BOOK_EVENTS.map(e => [e, new Set<IObserver>()]),
+    ALL_BOOK_EVENTS.map(e => [e, new Set<IObserver>()]),
   );
 
   subscribe(
     observer: IObserver,
-    events: readonly BookEventType[] = BOOK_EVENTS,
+    events: readonly BookEventType[] = ALL_BOOK_EVENTS,
   ): void {
     for (const event of events) this.observers.get(event)!.add(observer);
   }
 
   unsubscribe(
     observer: IObserver,
-    events: readonly BookEventType[] = BOOK_EVENTS,
+    events: readonly BookEventType[] = ALL_BOOK_EVENTS,
   ): void {
     for (const event of events) this.observers.get(event)!.delete(observer);
   }
@@ -66,6 +69,8 @@ export class BookEventSystem {
     return this.observers.get(event)!.size;
   }
 }
+
+export const bookEventEmitter = new BookEventSystem();
 
 export class EmailNotificationObserver implements IObserver {
   readonly name = 'EmailNotification';
@@ -108,7 +113,7 @@ export class AnalyticsObserver implements IObserver {
 
   getCounts(): Record<BookEventType, number> {
     return Object.fromEntries(
-      BOOK_EVENTS.map(e => [e, this.getCount(e)]),
+      ALL_BOOK_EVENTS.map(e => [e, this.getCount(e)]),
     ) as Record<BookEventType, number>;
   }
 

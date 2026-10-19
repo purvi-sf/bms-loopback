@@ -4,6 +4,7 @@ import {
   CategoryRecord,
   DemoLogger,
   NewBookRecord,
+  normaliseIsbn,
 } from '../shared/bms-types';
 
 export class BooksSubsystem {
@@ -15,7 +16,8 @@ export class BooksSubsystem {
   }
 
   findByIsbn(isbn: string): BookRecord | undefined {
-    return [...this.books.values()].find(b => b.isbn === isbn);
+    const target = normaliseIsbn(isbn);
+    return [...this.books.values()].find(b => normaliseIsbn(b.isbn) === target);
   }
 
   countByAuthor(authorId: number): number {
